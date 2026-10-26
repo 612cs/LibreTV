@@ -109,13 +109,14 @@ export function AggregatedCard({
   }, [multi, inView, group.key]);
 
   const activate = () => {
-    if (multi) {
-      const next = !expanded;
-      setExpanded(next);
-      if (next) probe(group.items);
-    } else {
-      onOpen(group.items[0]);
-    }
+    onOpen(firstBest || sortedItems[0] || group.items[0]);
+  };
+
+  const toggleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = !expanded;
+    setExpanded(next);
+    if (next) probe(group.items);
   };
 
   const singleItem = multi ? undefined : group.items[0];
@@ -145,14 +146,16 @@ export function AggregatedCard({
   return (
     <div
       ref={inViewRef}
-      className={cn('card', !multi && 'hover:scale-[1.02] hover:shadow-md', multi && expanded && 'ring-1 ring-accent/40')}
+      className={cn(
+        'group/agg bg-[#181818] border border-white/[0.08] hover:border-white/25 rounded-lg overflow-hidden transition-all duration-200 hover:scale-[1.015] shadow-lg',
+        multi && expanded && 'ring-1 ring-[#e50914]/50'
+      )}
     >
-      {/* 不用 h-full：展开面板需要撑高卡片，等高裁切会让面板不可见 */}
+      {/* 点击整张卡片直接进入播放页，底部自带全源切换矩阵 */}
       <div
         className="flex h-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60"
         role="button"
         tabIndex={0}
-        aria-expanded={multi ? expanded : undefined}
         onClick={activate}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -162,45 +165,46 @@ export function AggregatedCard({
         }}
       >
         {showImg ? (
-          <div className="relative flex-shrink-0 w-[105px] sm:w-[120px] aspect-[2/3] bg-chip">
+          <div className="relative flex-shrink-0 w-[108px] sm:w-[124px] aspect-[2/3] bg-[#222] overflow-hidden">
             <SmartImage
               url={group.pic}
               mode={imageProxyMode}
               customProxy={customImageProxy}
               alt={group.name}
-              className="absolute inset-0 h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover/agg:scale-105"
               onExhausted={() => setImgFailed(true)}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent" />
-            {multi && (
-              <span className="absolute top-1.5 left-1.5 tag bg-black/70 text-accent font-medium">
-                {group.items.length} 源
-              </span>
-            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent" />
+            <span className="font-display absolute top-1.5 left-2 text-[#e50914] text-base leading-none drop-shadow">
+              N
+            </span>
+            {/* 悬停播放圆环 */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/agg:opacity-100 transition-opacity flex items-center justify-center">
+              <div className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center shadow-xl">
+                <svg className="w-4 h-4 fill-current ml-0.5" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="relative flex-shrink-0 w-[105px] sm:w-[120px] aspect-[2/3] bg-chip flex items-center justify-center">
-            <svg className="w-8 h-8 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="relative flex-shrink-0 w-[108px] sm:w-[124px] aspect-[2/3] bg-[#222] flex items-center justify-center">
+            <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16m10-16v16M3 6a1 1 0 011-1h1a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6zm4 0a1 1 0 011-1h1a1 1 0 011 1v12a1 1 0 01-1 1h-1a1 1 0 01-1-1V6zm8 0a1 1 0 011-1h1a1 1 0 011 1v12a1 1 0 01-1 1h-1a1 1 0 01-1-1V6zm4 0a1 1 0 011-1h1a1 1 0 011 1v12a1 1 0 01-1 1h-1a1 1 0 01-1-1V6z" />
             </svg>
-            {multi && (
-              <span className="absolute top-1.5 left-1.5 tag bg-black/70 text-accent font-medium">
-                {group.items.length} 源
-              </span>
-            )}
           </div>
         )}
 
-        <div className="p-2.5 flex flex-col flex-grow min-w-0">
+        <div className="p-3.5 flex flex-col flex-grow min-w-0">
           <div className="flex-grow">
-            <h3 className="font-semibold text-sm text-content mb-1.5 line-clamp-2" title={group.name}>
+            <h3 className="font-bold text-sm sm:text-[15px] text-white mb-2 line-clamp-2 tracking-tight group-hover/agg:text-[#e50914] transition-colors" title={group.name}>
               {group.name}
             </h3>
-            <div className="flex flex-wrap gap-1 mb-1.5">
-              {group.typeName && <span className="tag bg-accent/15 text-accent">{group.typeName}</span>}
-              {group.year && <span className="tag bg-purple-500/15 text-purple-600 dark:text-purple-300">{group.year}</span>}
-              {adult && <span className="tag bg-pink-500/15 text-pink-600 dark:text-pink-400">(18+)</span>}
-              {/* 单源卡片没有展开列表，画质只能在这里露出；失败态可点重试 */}
+            <div className="flex flex-wrap items-center gap-1.5 mb-2">
+              <span className="text-[11px] font-bold text-[#46d369]">96% 匹配</span>
+              {group.year && <span className="text-[11px] text-neutral-400 font-medium">{group.year}</span>}
+              {group.typeName && <span className="netflix-spec-badge">{group.typeName}</span>}
+              {adult && <span className="netflix-spec-badge !border-red-500/50 !text-red-400">18+</span>}
               {singleKey && (
                 <QualityBadge
                   entry={qualities[singleKey]}
@@ -209,29 +213,24 @@ export function AggregatedCard({
                 />
               )}
             </div>
-            <p className="text-xs text-muted line-clamp-2 mb-2">{group.remarks || '暂无介绍'}</p>
+            <p className="text-xs text-neutral-400 line-clamp-2 mb-2">{group.remarks || 'HD 高清正片'}</p>
           </div>
-          <div className="flex items-center justify-between gap-1.5 mt-auto pt-1.5 border-t border-line">
-            <span className="tag bg-chip text-muted truncate max-w-[80%]">
-              {multi ? `${group.items.length} 个来源` : group.items[0].sourceName}
+          <div className="flex items-center justify-between gap-1.5 mt-auto pt-2 border-t border-white/[0.07]">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-neutral-300 truncate max-w-[75%]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#e50914]" />
+              {multi ? `已聚合 ${group.items.length} 条播放源 · 点击直达` : `${group.items[0].sourceName} · 点击直达`}
             </span>
             {multi && (
-              <span className="flex items-center gap-1 shrink-0">
-                {/* 收起态先给结论：最高画质比「N 个来源」更影响要不要点开 */}
-                {progress.best && (
-                  <span
-                    className="tag bg-accent/15 text-accent font-medium"
-                    title={
-                      progress.known < progress.total
-                        ? `已探到 / 实测的最高画质（${progress.known}/${progress.total} 个来源已有结论）`
-                        : '已探到 / 实测的最高画质'
-                    }
-                  >
-                    {progress.best}
-                  </span>
-                )}
+              <button
+                type="button"
+                onClick={toggleExpand}
+                className="flex items-center gap-1 shrink-0 px-2 py-0.5 rounded bg-white/[0.06] hover:bg-white/[0.14] text-[10px] text-neutral-300 transition-colors cursor-pointer"
+                title="预览全部来源"
+              >
+                {progress.best && <span className="text-[#46d369] font-bold">{progress.best}</span>}
+                <span>选源</span>
                 <svg
-                  className={cn('w-4 h-4 text-faint transition-transform', expanded && 'rotate-180')}
+                  className={cn('w-3 h-3 text-neutral-400 transition-transform', expanded && 'rotate-180')}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -239,7 +238,7 @@ export function AggregatedCard({
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-              </span>
+              </button>
             )}
           </div>
         </div>

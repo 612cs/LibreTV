@@ -24,7 +24,6 @@ export function NetflixHero({
   const customImageProxy = useAppStore((s) => s.customImageProxy);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 每次分类变化重置索引
   useEffect(() => {
     setCurrentIndex(0);
   }, [category]);
@@ -45,9 +44,14 @@ export function NetflixHero({
 
   if (!current) return null;
 
+  // 根据评分换算 Netflix 标志性绿色匹配度
+  const matchScore = current.rating
+    ? Math.min(99, Math.max(88, Math.round(parseFloat(current.rating) * 10 + 7)))
+    : 97;
+
   return (
     <div
-      className="relative w-full h-[62vh] min-h-[500px] max-h-[760px] overflow-hidden select-none -mt-16"
+      className="relative w-full h-[68vh] min-h-[520px] max-h-[800px] overflow-hidden select-none -mt-16"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       role="region"
@@ -61,83 +65,98 @@ export function NetflixHero({
           mode={imageProxyMode}
           customProxy={customImageProxy}
           alt={current.title}
-          className="w-full h-full object-cover object-[center_25%] filter brightness-[0.78] transition-all duration-1000 ease-out"
+          className="w-full h-full object-cover object-[center_22%] filter brightness-[0.82] contrast-[1.04] transition-all duration-1000 ease-out"
           priority
         />
 
-        {/* 电影级多重阴影渐变体系 */}
-        {/* 1. 左侧横向渐变遮罩：确保左侧白色大标题和剧情文字具有顶尖对比度 */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#141414] via-[#141414]/75 to-transparent w-full md:w-4/5 lg:w-3/5 pointer-events-none" />
-        
-        {/* 2. 顶部吸顶微暗过渡：衬托 Header 半透明毛玻璃 */}
-        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none" />
-        
-        {/* 3. 底部与内容区完全融合的大暗影渐变 */}
-        <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#141414] via-[#141414]/90 to-transparent pointer-events-none" />
+        {/* 电影级多重暗角与光影渐变体系 */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#141414] via-[#141414]/70 to-transparent w-full md:w-3/4 lg:w-3/5 pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-[#141414] via-[#141414]/90 to-transparent pointer-events-none" />
       </div>
 
       {/* Hero 前景大片信息区 */}
-      <div className="relative z-10 max-w-7xl mx-auto h-full flex flex-col justify-end px-4 sm:px-8 pb-14 sm:pb-20">
-        <div className="max-w-2xl space-y-3 sm:space-y-4" key={current.title}>
-          {/* Netflix 烈焰红角标与排位指示 */}
-          <div className="flex items-center gap-2.5">
-            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-[#e50914] text-white font-black text-xs tracking-wider uppercase shadow-lg shadow-red-900/40">
-              TOP 10
+      <div className="relative z-10 max-w-[1440px] mx-auto h-full flex flex-col justify-end px-4 sm:px-10 pb-16 sm:pb-22">
+        <div className="max-w-2xl space-y-3.5" key={current.title}>
+          {/* 1. 正版 Netflix N SERIES / FILM 顶部品牌认证标 */}
+          <div className="flex items-center gap-2">
+            <span className="font-display text-[#e50914] text-2xl sm:text-3xl leading-none drop-shadow-[0_2px_8px_rgba(229,9,20,0.6)]">
+              N
             </span>
-            <span className="text-xs sm:text-sm font-semibold tracking-wide text-neutral-300 drop-shadow">
-              {category === 'anime'
-                ? '全网动漫热搜榜'
-                : category === 'movie'
-                ? '全网电影热播榜'
-                : category === 'tv'
-                ? '全网剧集热播榜'
-                : '今日全网热搜'} 第 {currentIndex + 1} 位
+            <span className="text-[11px] sm:text-xs font-bold tracking-[0.32em] text-neutral-300 uppercase">
+              {category === 'movie'
+                ? 'FILM · 院线巨制'
+                : category === 'anime'
+                ? 'ANIME · 番剧精选'
+                : 'SERIES · 剧集精选'}
             </span>
           </div>
 
-          {/* 影视大标题 */}
+          {/* 2. 影视大标题 */}
           <h1
-            className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.1] drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]"
+            className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.08] drop-shadow-[0_6px_24px_rgba(0,0,0,0.95)]"
             title={current.title}
           >
             {current.title}
           </h1>
 
-          {/* 影视元数据徽章 */}
-          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+          {/* 3. Netflix 经典元数据微标行（绿色匹配度 + TOP 10 红章 + 4K ULTRA HD 边框标） */}
+          <div className="flex flex-wrap items-center gap-2.5 text-xs sm:text-sm pt-0.5">
+            <span className="font-bold text-[#46d369] tracking-tight">
+              {matchScore}% 匹配
+            </span>
+
             {current.rating && (
-              <span className="flex items-center gap-1 font-bold text-amber-400 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded border border-amber-500/30 shadow-md">
-                ★ {current.rating} 分
+              <span className="font-bold text-amber-400">
+                ★ {current.rating}
               </span>
             )}
-            <span className="px-2 py-0.5 rounded bg-white/15 backdrop-blur-md text-white font-medium border border-white/20 text-xs">
-              4K 原生壁纸
-            </span>
-            <span className="px-2 py-0.5 rounded bg-white/15 backdrop-blur-md text-white font-medium border border-white/20 text-xs">
-              杜比全景声
-            </span>
-            {current.tags?.map((t) => (
-              <span
-                key={t}
-                className="hidden sm:inline-block px-2 py-0.5 rounded bg-black/40 text-neutral-300 border border-white/10 text-xs"
-              >
-                {t}
+
+            <span className="netflix-spec-badge">4K ULTRA HD</span>
+            <span className="netflix-spec-badge">HDR</span>
+            <span className="netflix-spec-badge">Dolby Atmos</span>
+
+            <span className="inline-flex items-center gap-1.5 ml-1">
+              <span className="inline-flex flex-col items-center justify-center w-5 h-5 rounded-[2px] bg-[#e50914] text-white font-display text-[9px] leading-[0.85] shadow">
+                <span>TOP</span>
+                <span>10</span>
               </span>
-            ))}
+              <span className="text-xs font-bold text-white drop-shadow">
+                {category === 'anime'
+                  ? '番剧榜'
+                  : category === 'movie'
+                  ? '电影榜'
+                  : category === 'tv'
+                  ? '剧集榜'
+                  : '今日热播'} No.{currentIndex + 1}
+              </span>
+            </span>
           </div>
 
-          {/* 真实官方剧情简介 */}
-          <p className="text-xs sm:text-sm text-neutral-300 line-clamp-2 sm:line-clamp-3 leading-relaxed drop-shadow max-w-xl text-justify">
+          {/* 4. 真实官方剧情简介 */}
+          <p className="text-xs sm:text-[15px] text-neutral-200/95 line-clamp-2 sm:line-clamp-3 leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] max-w-xl font-normal">
             {current.overview}
           </p>
 
-          {/* Netflix 经典双操作按钮 */}
+          {/* 5. 类型标签 */}
+          {current.tags && current.tags.length > 0 && (
+            <div className="flex items-center gap-2 text-xs text-neutral-300 font-medium">
+              {current.tags.map((t, idx) => (
+                <span key={t} className="flex items-center gap-2">
+                  {idx > 0 && <span className="w-1 h-1 rounded-full bg-[#e50914]" />}
+                  <span>{t}</span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* 6. Netflix 经典双操作按钮（点击直接进入播放页） */}
           <div className="flex items-center gap-3 pt-2">
             <button
               onClick={() => onPlay(current.title)}
-              className="group inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:px-8 sm:py-3 rounded-md bg-white text-black font-bold text-sm sm:text-base hover:bg-neutral-200 active:scale-95 transition-all shadow-xl hover:shadow-white/20 cursor-pointer"
+              className="group inline-flex items-center justify-center gap-2.5 px-6 py-2.5 sm:px-8 sm:py-3 rounded-[4px] bg-white text-black font-bold text-sm sm:text-base hover:bg-white/85 active:scale-95 transition-all shadow-xl cursor-pointer"
             >
-              <svg className="w-5 h-5 fill-current transition-transform group-hover:scale-110" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 fill-current transition-transform group-hover:scale-110" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
               <span>立即播放</span>
@@ -145,30 +164,30 @@ export function NetflixHero({
 
             <button
               onClick={() => onInfo(current.title)}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:px-7 sm:py-3 rounded-md bg-neutral-600/70 text-white font-semibold text-sm sm:text-base hover:bg-neutral-600/90 active:scale-95 transition-all backdrop-blur-md border border-white/10 cursor-pointer"
+              className="inline-flex items-center justify-center gap-2.5 px-5 py-2.5 sm:px-7 sm:py-3 rounded-[4px] bg-[#6d6d6e]/70 text-white font-semibold text-sm sm:text-base hover:bg-[#6d6d6e]/50 active:scale-95 transition-all backdrop-blur-md cursor-pointer"
             >
-              <svg className="w-5 h-5 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth={2}>
+              <svg className="w-5 h-5 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth={2.2}>
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 16v-4M12 8h.01" />
               </svg>
-              <span>更多信息</span>
+              <span>剧集详情与选源</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* 右下角横屏大片轮播指示器 */}
+      {/* 右下角横屏大片轮播分页条（正版 Netflix 顶栏右侧扁平指示条风格） */}
       {items.length > 1 && (
-        <div className="absolute right-4 sm:right-8 bottom-12 z-20 flex items-center gap-1.5 sm:gap-2">
+        <div className="absolute right-4 sm:right-10 bottom-14 z-20 flex items-center gap-1.5">
           {items.map((item, idx) => (
             <button
               key={item.title}
               onClick={() => setCurrentIndex(idx)}
               className={cn(
-                'h-1 rounded-full transition-all duration-300 cursor-pointer',
+                'h-[3px] transition-all duration-300 cursor-pointer',
                 idx === currentIndex
-                  ? 'w-8 bg-[#e50914] shadow-md shadow-red-600/50'
-                  : 'w-3 bg-white/30 hover:bg-white/60'
+                  ? 'w-7 bg-[#e50914]'
+                  : 'w-3.5 bg-white/35 hover:bg-white/65'
               )}
               aria-label={`切换到第 ${idx + 1} 张大片：${item.title}`}
             />

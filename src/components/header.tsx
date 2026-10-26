@@ -72,18 +72,15 @@ export function Header({
             : 'bg-gradient-to-b from-black/90 via-black/50 to-transparent border-transparent'
         )}
       >
-        <div className="max-w-7xl w-full mx-auto px-4 sm:px-8 flex items-center gap-4 sm:gap-6">
-          {/* Netflix 风格红色品牌 Logo */}
+        <div className="max-w-[1440px] w-full mx-auto px-4 sm:px-10 flex items-center gap-5 sm:gap-8">
+          {/* Netflix 经典 Bebas Neue 电影级红色字标 */}
           <Link
             href="/"
             aria-label="LibreTV 首页"
-            className="flex items-center gap-2 shrink-0 group py-1"
+            className="flex items-center gap-1.5 shrink-0 group py-1 select-none"
           >
-            <div className="w-8 h-8 rounded bg-[#e50914] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-              <span className="text-white font-black text-lg tracking-tighter">L</span>
-            </div>
-            <span className="text-xl sm:text-2xl font-black tracking-tighter text-[#e50914] group-hover:brightness-110 transition-all font-mono">
-              LIBRE<span className="text-white">TV</span>
+            <span className="font-display text-3xl sm:text-[34px] leading-none tracking-[0.06em] text-[#e50914] drop-shadow-[0_2px_10px_rgba(229,9,20,0.45)] group-hover:brightness-110 transition-all">
+              LIBRETV
             </span>
           </Link>
 

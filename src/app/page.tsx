@@ -116,6 +116,28 @@ function HomeContent() {
     router.push(`/?s=${encodeURIComponent(query)}`, { scroll: false });
   };
 
+  /** 点击电影/剧集卡片直接进入播放页（播放页内置多源自动择优与底部一键换源） */
+  const directPlayByTitle = (title: string) => {
+    const clean = title.trim().slice(0, 100);
+    if (!clean) return;
+    if (selectedSources.length === 0) {
+      toast('请先在设置中添加并勾选点播源', 'warning');
+      return;
+    }
+    router.push(`/watch?title=${encodeURIComponent(clean)}`);
+  };
+
+  /** 搜索结果卡片点击直接进入播放页 */
+  const directPlayItem = (item: SearchResultItem) => {
+    const q = new URLSearchParams({
+      source: item.sourceKey,
+      id: String(item.vodId),
+      title: item.name,
+      index: '0',
+    });
+    router.push(`/watch?${q.toString()}`);
+  };
+
   const isSearching = Boolean(urlQuery) && searchQuery.isFetching && !searchQuery.data;
   const streamedList = useMemo(
     () => streamedOutcomes.flatMap((o) => o.list),
@@ -152,24 +174,24 @@ function HomeContent() {
         {/* 未处于搜索状态时：沉浸式呈现 Netflix 首屏 4K 横屏大片与滑动行 */}
         {!urlQuery ? (
           <>
-            {/* 首屏 4K 原生超清横屏 Hero 大片（不同分类具备专属 4K 壁纸） */}
+            {/* 首屏 4K 原生超清横屏 Hero 大片（点击「立即播放」直达播放页） */}
             <NetflixHero
               category={categoryFilter}
-              onPlay={(title) => runSearch(title)}
+              onPlay={(title) => directPlayByTitle(title)}
               onInfo={(title) => runSearch(title)}
             />
 
-            {/* 内容行陈列区 */}
+            {/* 内容行陈列区（点击任意电影/剧集海报直达播放页） */}
             <div className="-mt-8 relative z-20">
               <RecommendSection
                 categoryFilter={categoryFilter}
-                onPick={(title) => runSearch(title)}
+                onPick={(title) => directPlayByTitle(title)}
               />
             </div>
           </>
         ) : (
           /* 搜索结果界面：顶栏避让 pt-24，以高密度流媒体卡片陈列 */
-          <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-24">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-10 pt-24">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 border-b border-white/10 pb-4">
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
@@ -232,7 +254,7 @@ function HomeContent() {
                       key={group.key}
                       group={group}
                       sources={selectedSources}
-                      onOpen={(item) => setDetailItem(item)}
+                      onOpen={(item) => directPlayItem(item)}
                     />
                   ))}
                 </div>

@@ -76,8 +76,131 @@ body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.font-display {
+  font-family: 'Bebas Neue', 'Inter', -apple-system, sans-serif;
+  letter-spacing: 0.04em;
+}
+
+/* Netflix 工业级规格微标（4K / HD / 5.1 / HDR） */
+.netflix-spec-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* 影院级环境背光漫反射 */
+.cinema-ambient {
+  box-shadow:
+    0 25px 70px -15px rgba(0, 0, 0, 0.95),
+    0 0 90px -20px rgba(229, 9, 20, 0.16),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* ArtPlayer —— Netflix 旗舰播放控件深度定制 */
+.art-video-player {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif !important;
+  background: #000 !important;
+}
+
+/* 底部控制栏深邃电影暗角渐变 */
+.art-video-player .art-bottom {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.55) 55%,
+    transparent 100%
+  ) !important;
+  padding-top: 28px !important;
+  transition: opacity 0.25s ease, transform 0.25s ease !important;
+}
+
+/* Netflix 烈焰红高敏进度条 */
+.art-video-player .art-progress {
+  height: 5px !important;
+  margin-bottom: 6px !important;
+  transition: height 0.15s ease !important;
+}
+.art-video-player .art-progress:hover {
+  height: 8px !important;
+}
+.art-video-player .art-progress-played {
+  background: #e50914 !important;
+  box-shadow: 0 0 10px rgba(229, 9, 20, 0.7) !important;
+}
+.art-video-player .art-progress-indicator {
+  background: #e50914 !important;
+  box-shadow: 0 0 12px rgba(229, 9, 20, 0.95), 0 0 0 2px rgba(255, 255, 255, 0.9) !important;
+  transform: scale(1.15) !important;
+  transition: transform 0.15s ease !important;
+}
+.art-video-player .art-progress:hover .art-progress-indicator {
+  transform: scale(1.4) !important;
+}
+.art-video-player .art-mini-progress-bar {
+  background: #e50914 !important;
+  height: 2px !important;
+}
+
+/* 底部按钮交互悬停动效 */
+.art-video-player .art-control {
+  transition: transform 0.15s ease, opacity 0.15s ease !important;
+}
+.art-video-player .art-control:hover {
+  transform: scale(1.12);
+}
+
+/* 居中暂停/播放大图标：Netflix 高定毛玻璃圆环 + 悬停烈焰红 */
+.art-video-player .art-state {
+  bottom: auto !important;
+  right: auto !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 76px !important;
+  height: 76px !important;
+  border-radius: 9999px !important;
+  background: rgba(15, 15, 15, 0.72) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 2px solid rgba(255, 255, 255, 0.65) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.75) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+.art-video-player .art-state:hover {
+  background: rgba(229, 9, 20, 0.9) !important;
+  border-color: #ffffff !important;
+  transform: translate(-50%, -50%) scale(1.08) !important;
+  box-shadow: 0 0 30px rgba(229, 9, 20, 0.6) !important;
+}
+.art-video-player .art-state svg {
+  width: 34px !important;
+  height: 34px !important;
+  fill: #ffffff !important;
+}
+
+/* 设置浮层毛玻璃暗黑化 */
+.art-video-player .art-settings,
+.art-video-player .art-contextmenus {
+  background: rgba(20, 20, 20, 0.92) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 10px !important;
 }
 
 @layer components {

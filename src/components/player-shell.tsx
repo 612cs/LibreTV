@@ -530,14 +530,37 @@ export function PlayerShell({
       playsInline: true,
       airplay: true,
       hotkey: false,
-      theme: '#2563eb',
+      theme: '#e50914',
       lang: navigator.language.toLowerCase().startsWith('zh') ? 'zh-cn' : 'en',
       moreVideoAttr: { crossOrigin: 'anonymous', playsInline: true },
-      // 上/下集放在播放键右侧：换集是看剧最高频的动作，不该让用户滚回页面下方找按钮
+      // Netflix 风格控制栏：快退10s / 快进10s + 上/下一集
       controls: [
         {
-          name: 'prev-episode',
+          name: 'rewind-10',
+          index: 10,
+          position: 'left',
+          html: '<svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><text x="12" y="15.5" text-anchor="middle" font-size="7.5" font-weight="700" stroke="none" fill="currentColor">10</text></svg>',
+          tooltip: '快退 10 秒',
+          click: () => {
+            if (!artRef.current) return;
+            artRef.current.currentTime = Math.max(0, (artRef.current.currentTime || 0) - 10);
+          },
+        },
+        {
+          name: 'forward-10',
           index: 11,
+          position: 'left',
+          html: '<svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><text x="12" y="15.5" text-anchor="middle" font-size="7.5" font-weight="700" stroke="none" fill="currentColor">10</text></svg>',
+          tooltip: '快进 10 秒',
+          click: () => {
+            if (!artRef.current) return;
+            const dur = artRef.current.duration || Infinity;
+            artRef.current.currentTime = Math.min(dur, (artRef.current.currentTime || 0) + 10);
+          },
+        },
+        {
+          name: 'prev-episode',
+          index: 12,
           position: 'left',
           html: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><path fill="currentColor" d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z"/></svg>',
           tooltip: '上一集 (Alt+←)',
@@ -547,7 +570,7 @@ export function PlayerShell({
         },
         {
           name: 'next-episode',
-          index: 12,
+          index: 13,
           position: 'left',
           html: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>',
           tooltip: '下一集 (Alt+→)',
@@ -990,7 +1013,7 @@ export function PlayerShell({
       {!error && skipPrompt && (
         <button
           type="button"
-          className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 rounded-full bg-black/70 px-4 py-2 text-sm text-white transition-colors hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="absolute bottom-20 right-6 z-20 rounded bg-white/95 text-black px-5 py-2 text-xs sm:text-sm font-bold tracking-wide shadow-2xl border border-white transition-all hover:bg-white hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           onClick={() => {
             if (skipPrompt.type === 'ending') {
               finishBySkip(skipPrompt);
@@ -1013,15 +1036,13 @@ export function PlayerShell({
         </button>
       )}
       {error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80">
-          <p className="text-danger text-sm">{error}</p>
-          <button className="btn-ghost text-xs" onClick={() => location.reload()}>
-            重新加载
-          </button>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/85 backdrop-blur-sm">
+          <p className="text-danger text-sm font-medium">{error}</p>
+          <p className="text-xs text-neutral-400">可在播放器正下方直接点击切换其他播放源</p>
         </div>
       )}
       {(hint || undoSkip) && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 text-sm text-white animate-fade-in">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 rounded-full bg-black/75 backdrop-blur-md border border-white/10 px-4 py-1.5 text-xs sm:text-sm text-white animate-fade-in">
           {/* 撤销窗口比普通提示长：hint 已淡出时仍要让用户知道刚才跳过了什么 */}
           <span className="pointer-events-none">
             {hint || (undoSkip ? `已跳过${SEGMENT_LABELS[undoSkip.segment.type]}` : '')}
@@ -1029,17 +1050,12 @@ export function PlayerShell({
           {undoSkip && (
             <button
               type="button"
-              className="pointer-events-auto shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium transition-colors hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="pointer-events-auto shrink-0 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium transition-colors hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               onClick={undoLastSkip}
             >
               撤销
             </button>
           )}
-        </div>
-      )}
-      {autoplayNext && !error && (
-        <div className="absolute bottom-16 right-3 text-[10px] text-muted bg-black/50 px-2 py-0.5 rounded pointer-events-none">
-          自动连播已开启
         </div>
       )}
     </div>
