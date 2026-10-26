@@ -539,7 +539,7 @@ export function PlayerShell({
           name: 'rewind-10',
           index: 10,
           position: 'left',
-          html: '<svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><text x="12" y="15.5" text-anchor="middle" font-size="7.5" font-weight="700" stroke="none" fill="currentColor">10</text></svg>',
+          html: '<svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24"><path style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" d="M3 3v5h5"/><text x="12" y="15.5" text-anchor="middle" font-size="7.5" font-weight="800" style="fill:currentColor;stroke:none">10</text></svg>',
           tooltip: '快退 10 秒',
           click: () => {
             if (!artRef.current) return;
@@ -550,7 +550,7 @@ export function PlayerShell({
           name: 'forward-10',
           index: 11,
           position: 'left',
-          html: '<svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><text x="12" y="15.5" text-anchor="middle" font-size="7.5" font-weight="700" stroke="none" fill="currentColor">10</text></svg>',
+          html: '<svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24"><path style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" d="M21 3v5h-5"/><text x="12" y="15.5" text-anchor="middle" font-size="7.5" font-weight="800" style="fill:currentColor;stroke:none">10</text></svg>',
           tooltip: '快进 10 秒',
           click: () => {
             if (!artRef.current) return;
@@ -635,7 +635,13 @@ export function PlayerShell({
       if (typeof height === 'number' && height > 0) reportQuality(height);
     };
     art.on('video:loadedmetadata', reportVideoHeight);
-    art.on('video:canplay', reportVideoHeight);
+    art.on('video:canplay', () => {
+      setShowPoster(false);
+      reportVideoHeight();
+    });
+    art.on('video:loadeddata', () => {
+      setShowPoster(false);
+    });
     // resize 不在 ArtPlayer 的视频事件转发表里，直接挂原生事件
     art.video?.addEventListener('resize', reportVideoHeight);
 
@@ -1000,15 +1006,12 @@ export function PlayerShell({
     <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" style={{ WebkitTouchCallout: 'none' }} />
       {showPoster && !error && (
-        <div
-          className="absolute inset-0 bg-black pointer-events-none"
-          style={{
-            backgroundImage: 'url(/player-poster.png)',
-            backgroundSize: 'contain',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-          }}
-        />
+        <div className="absolute inset-0 bg-[#0a0a0a] pointer-events-none flex flex-col items-center justify-center gap-4">
+          <div className="font-display text-4xl sm:text-5xl tracking-[0.14em] text-[#e50914] drop-shadow-[0_0_24px_rgba(229,9,20,0.45)] select-none">
+            LIBRETV
+          </div>
+          <div className="w-8 h-8 rounded-full border-2 border-[#e50914]/25 border-t-[#e50914] animate-spin" />
+        </div>
       )}
       {!error && skipPrompt && (
         <button

@@ -517,9 +517,9 @@ function WatchContent() {
           <BackButton />
           <HomeButton />
 
-          <Link href="/" className="hidden sm:flex items-center gap-2 mr-2 select-none">
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-[#e50914] text-white font-display text-base leading-none shadow-md shadow-[#e50914]/30">
-              L
+          <Link href="/" className="hidden sm:flex items-center gap-1.5 mr-2 select-none group">
+            <span className="font-display text-2xl leading-none tracking-[0.06em] text-[#e50914] drop-shadow-[0_2px_8px_rgba(229,9,20,0.45)] group-hover:brightness-110 transition-all">
+              LIBRETV
             </span>
           </Link>
 
