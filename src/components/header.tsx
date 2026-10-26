@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { ThemeToggle } from './theme';
 import { SourceManagerDrawer } from './source-manager';
@@ -11,22 +11,39 @@ import { Icon } from './icon';
 import { SearchHistoryDropdown, useSearchHistory } from './search-history';
 import { cn } from '@/lib/utils';
 
-/** 顶部导航：Logo、搜索框（首页外）、历史、设置 */
-export function Header({ showSearch = false }: { showSearch?: boolean }) {
+/** Netflix 沉浸式流媒体顶栏：透明渐变跟随滚动、品牌红标、展开式搜索框 */
+export function Header({
+  showSearch = true,
+  onNavCategory,
+}: {
+  showSearch?: boolean;
+  onNavCategory?: (category: 'all' | 'movie' | 'tv' | 'anime') => void;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [query, setQuery] = useState('');
-  // 与首页搜索框共用同一套「最近搜索」下拉逻辑
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [searchExpanded, setSearchExpanded] = useState(false);
+
   const searchHistory = useSearchHistory(query);
+
+  // 监听滚动位置改变导航栏透明度
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 30);
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const submitSearch = (text: string) => {
     const q = text.trim().slice(0, 100);
     if (!q) return;
     searchHistory.close();
     router.push(`/?s=${encodeURIComponent(q)}`, { scroll: false });
-    // 顶栏搜索一并写入最近搜索（此前只有首页会记录）
     searchHistory.record(q);
   };
 
@@ -37,115 +54,184 @@ export function Header({ showSearch = false }: { showSearch?: boolean }) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-line">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
-          <Link href="/" aria-label="LibreTV 首页" className="flex items-center shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/icon-512.png" alt="LibreTV" className="w-7 h-7 rounded-lg" />
+      <header
+        className={cn(
+          'fixed top-0 inset-x-0 z-50 h-16 transition-all duration-300 flex items-center',
+          isScrolled
+            ? 'bg-[#141414]/95 backdrop-blur-md border-b border-white/10 shadow-2xl'
+            : 'bg-gradient-to-b from-black/90 via-black/50 to-transparent border-transparent'
+        )}
+      >
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-8 flex items-center gap-4 sm:gap-6">
+          {/* Netflix 风格红色品牌 Logo */}
+          <Link
+            href="/"
+            aria-label="LibreTV 首页"
+            className="flex items-center gap-2 shrink-0 group py-1"
+          >
+            <div className="w-8 h-8 rounded bg-[#e50914] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+              <span className="text-white font-black text-lg tracking-tighter">L</span>
+            </div>
+            <span className="text-xl sm:text-2xl font-black tracking-tighter text-[#e50914] group-hover:brightness-110 transition-all font-mono">
+              LIBRE<span className="text-white">TV</span>
+            </span>
           </Link>
 
-          {showSearch && (
-            <form
-              className="flex-1 max-w-xl hidden sm:block"
-              onSubmit={(e) => {
-                e.preventDefault();
-                submitSearch(query);
+          {/* 桌面端导航主分类 */}
+          <nav className="hidden md:flex items-center gap-5 text-sm font-medium">
+            <button
+              onClick={() => {
+                if (pathname !== '/') router.push('/');
+                onNavCategory?.('all');
               }}
+              className={cn(
+                'cursor-pointer transition-colors',
+                pathname === '/' ? 'text-white font-bold' : 'text-neutral-400 hover:text-neutral-200'
+              )}
             >
-              <div ref={searchHistory.containerRef} className="relative">
-                <input
-                  className={cn(
-                    'input w-full h-9',
-                    // 展开时：上圆角与外框沿用聚焦样式，底边改为内部分隔线，与下拉拼成同一面板
-                    searchHistory.visible &&
-                      'rounded-b-none border-accent border-b-line bg-surface-raised focus-visible:ring-0'
-                  )}
-                  aria-label="搜索影片"
-                  placeholder="搜索影片..."
-                  value={query}
-                  maxLength={100}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    searchHistory.resetActive();
-                  }}
-                  onFocus={searchHistory.onFocus}
-                  onKeyDown={(e) => searchHistory.onKeyDown(e, pickHistory)}
-                  role="combobox"
-                  aria-expanded={searchHistory.visible}
-                  aria-controls="header-search-history"
-                  aria-autocomplete="list"
-                  aria-activedescendant={
-                    searchHistory.visible && searchHistory.activeIndex >= 0
-                      ? `header-search-history-${searchHistory.activeIndex}`
-                      : undefined
-                  }
-                />
-                {searchHistory.visible && (
-                  <SearchHistoryDropdown
-                    id="header-search-history"
-                    matches={searchHistory.matches}
-                    activeIndex={searchHistory.activeIndex}
-                    onPick={pickHistory}
-                    onRemove={searchHistory.remove}
-                    onClearAll={searchHistory.clearAll}
-                  />
-                )}
-              </div>
-            </form>
-          )}
-
-          <div className="flex-1 sm:hidden" />
-
-          <nav className="flex items-center gap-1 ml-auto">
-            <HeaderLink href="/live" active={pathname === '/live'}>
-              直播
-            </HeaderLink>
-            <HeaderLink href="/about" active={pathname === '/about'}>
-              关于
-            </HeaderLink>
-            <ThemeToggle />
-            <IconButton label="观看历史" onClick={() => setHistoryOpen(true)}>
-              <Icon name="clock" />
-            </IconButton>
-            <IconButton label="下载管理" onClick={requestShowDownloadManager}>
-              <Icon name="download" />
-            </IconButton>
-            <IconButton label="设置" onClick={() => setSettingsOpen(true)}>
-              <Icon name="gear" />
-            </IconButton>
+              首页
+            </button>
+            <button
+              onClick={() => {
+                if (pathname !== '/') router.push('/');
+                onNavCategory?.('movie');
+              }}
+              className="text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer"
+            >
+              电影
+            </button>
+            <button
+              onClick={() => {
+                if (pathname !== '/') router.push('/');
+                onNavCategory?.('tv');
+              }}
+              className="text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer"
+            >
+              剧集
+            </button>
+            <button
+              onClick={() => {
+                if (pathname !== '/') router.push('/');
+                onNavCategory?.('anime');
+              }}
+              className="text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer"
+            >
+              动漫
+            </button>
+            <Link
+              href="/live"
+              className={cn(
+                'flex items-center gap-1.5 transition-colors',
+                pathname === '/live' ? 'text-white font-bold' : 'text-neutral-400 hover:text-neutral-200'
+              )}
+            >
+              <span className="live-dot" />
+              <span>电视直播</span>
+            </Link>
           </nav>
+
+          <div className="flex-1" />
+
+          {/* 右侧功能组：展开式搜索 + 快捷入口 */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {showSearch && (
+              <form
+                className="relative"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submitSearch(query);
+                }}
+              >
+                <div
+                  ref={searchHistory.containerRef}
+                  className={cn(
+                    'flex items-center rounded-full border transition-all duration-300',
+                    searchExpanded || query
+                      ? 'w-48 sm:w-64 bg-black/80 border-white/30 px-3'
+                      : 'w-9 sm:w-10 bg-transparent border-transparent hover:border-white/20'
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSearchExpanded(!searchExpanded)}
+                    className="w-8 h-8 flex items-center justify-center text-neutral-300 hover:text-white shrink-0 cursor-pointer"
+                    aria-label="展开搜索"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
+
+                  {(searchExpanded || query) && (
+                    <input
+                      className="w-full bg-transparent text-xs sm:text-sm text-white placeholder:text-neutral-400 py-1.5 focus:outline-none"
+                      placeholder="搜索影片、动漫、日剧..."
+                      value={query}
+                      maxLength={100}
+                      autoFocus
+                      onChange={(e) => {
+                        setQuery(e.target.value);
+                        searchHistory.resetActive();
+                      }}
+                      onFocus={searchHistory.onFocus}
+                      onKeyDown={(e) => searchHistory.onKeyDown(e, pickHistory)}
+                      role="combobox"
+                      aria-expanded={searchHistory.visible}
+                      aria-controls="header-search-history"
+                      aria-autocomplete="list"
+                    />
+                  )}
+                </div>
+
+                {searchHistory.visible && (
+                  <div className="absolute right-0 top-11 w-64 z-50">
+                    <SearchHistoryDropdown
+                      id="header-search-history"
+                      matches={searchHistory.matches}
+                      activeIndex={searchHistory.activeIndex}
+                      onPick={pickHistory}
+                      onRemove={searchHistory.remove}
+                      onClearAll={searchHistory.clearAll}
+                    />
+                  </div>
+                )}
+              </form>
+            )}
+
+            <button
+              onClick={() => setHistoryOpen(true)}
+              className="p-2 rounded-full text-neutral-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="观看历史"
+              title="观看历史"
+            >
+              <Icon name="clock" />
+            </button>
+
+            <button
+              onClick={requestShowDownloadManager}
+              className="p-2 rounded-full text-neutral-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="下载管理"
+              title="下载管理"
+            >
+              <Icon name="download" />
+            </button>
+
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="p-2 rounded-full text-neutral-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="源设置"
+              title="影视源与画质设置"
+            >
+              <Icon name="gear" />
+            </button>
+
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
       <SourceManagerDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <HistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} />
     </>
-  );
-}
-
-function HeaderLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        'px-2.5 py-1.5 rounded-md text-sm transition-colors',
-        active ? 'text-content bg-hover' : 'text-muted hover:text-content'
-      )}
-    >
-      {children}
-    </Link>
-  );
-}
-
-function IconButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      className="p-2 rounded-md text-muted hover:text-content hover:bg-hover transition-colors"
-      title={label}
-      aria-label={label}
-      onClick={onClick}
-    >
-      {children}
-    </button>
   );
 }

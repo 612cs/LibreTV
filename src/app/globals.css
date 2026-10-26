@@ -36,29 +36,28 @@
 }
 
 .dark {
-  /* 旧版 LibreTV（backup-2025）赛博影视主题（整体调深一档）：深蓝黑底 + 霓虹蓝/粉点缀 */
-  --c-page: 11 16 26;              /* #0b101a 深蓝黑页面底色 */
-  --c-surface: 20 28 41;           /* #141c29 弹窗/抽屉底色 */
-  --c-surface-raised: 20 28 41;
-  --c-card: 13 20 31;              /* #0d141f 卡片底色 */
-  --c-chip: 22 32 46;              /* #16202e 卡片/输入框底色 */
-  --c-hover: 29 42 61;             /* #1d2a3d 悬停态（chip 提亮） */
-  --c-line: 34 48 69;              /* #223045 边框（近似旧版 rgba(0,204,255,.15) 观感） */
-  --c-content: 230 242 255;        /* #e6f2ff 蓝白主文本（--text-color） */
-  --c-muted: 133 153 178;          /* #8599b2 次级文本（--text-muted） */
-  --c-faint: 122 140 166;          /* #7a8ca6 三级文本（原 #6b7f99 在抽屉底色 #141c29 上仅 4.17:1，12px 小字不达标；提亮后 4.99:1） */
-  --c-accent: 0 184 230;           /* #00b8e6 霓虹蓝主色（--primary-color 调深一档） */
-  --c-accent-hover: 51 214 255;    /* #33d6ff 霓虹蓝浅变体（--primary-light） */
-  /* 霓虹蓝底亮度过高（对白字仅 2.35:1），暗色下实心底改用深色文字 */
-  --c-on-accent: 8 19 31;
-  /* 语义状态色（暗色主题取中等明度值，保证深蓝黑底上的对比度） */
+  /* Netflix 沉浸式流媒体主题：#141414 经典深黑 + #E50914 烈焰红高光 */
+  --c-page: 20 20 20;              /* #141414 经典 Netflix 深灰黑页面底色 */
+  --c-surface: 24 24 24;           /* #181818 弹窗/抽屉底色 */
+  --c-surface-raised: 32 32 32;    /* #202020 浮动面板底色 */
+  --c-card: 26 26 26;              /* #1a1a1a 卡片底色 */
+  --c-chip: 38 38 38;              /* #262626 胶囊/搜索框底色 */
+  --c-hover: 48 48 48;             /* #303030 悬停提亮 */
+  --c-line: 45 45 45;              /* #2d2d2d 边框细线 */
+  --c-content: 255 255 255;        /* #ffffff 纯白高对比度文字 */
+  --c-muted: 179 179 179;          /* #b3b3b3 Netflix 经典次级文字灰 */
+  --c-faint: 115 115 115;          /* #737373 三级提示文本 */
+  --c-accent: 229 9 20;            /* #e50914 标志性 Netflix 烈焰红 */
+  --c-accent-hover: 244 6 18;      /* #f40612 高亮红 */
+  --c-on-accent: 255 255 255;      /* 实心红底配白字 */
+  /* 语义状态色 */
   --c-danger: 239 68 68;           /* red-500 */
   --c-danger-hover: 248 113 113;   /* red-400 */
   --c-success: 34 197 94;          /* green-500 */
   --c-warning: 245 158 11;         /* amber-500 */
   --c-info: 59 130 246;            /* blue-500 */
-  --c-rating: 251 191 36;          /* amber-400 */
-  /* 实心状态底色（配白字）：与亮色一致取深档，避免琥珀/绿色底白字对比度不足 */
+  --c-rating: 251 191 36;          /* amber-400 金黄评分星标 */
+  /* 实心状态底色 */
   --c-danger-solid: 185 28 28;     /* red-700 */
   --c-success-solid: 21 128 61;    /* green-700 */
   --c-warning-solid: 180 83 9;     /* amber-700 */
@@ -71,9 +70,9 @@ body {
   @apply bg-page text-content antialiased;
 }
 
-/* 暗色主题：模拟旧版 .page-bg 的深蓝黑纵向渐变 */
+/* 暗色主题：Netflix #141414 平滑黑金底色 */
 .dark body {
-  background: linear-gradient(180deg, rgb(11 16 26), rgb(20 28 41)) fixed;
+  background: #141414 fixed;
 }
 
 body {
@@ -133,9 +132,28 @@ body {
   color: rgb(var(--c-on-accent)) !important;
 }
 
-/* 品牌渐变字（沿用旧版 LibreTV 的霓虹蓝→霓虹粉） */
+/* 隐藏横向滚动条但保留平滑滑动能力 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Netflix 电影级海报微缩放动效 */
+.netflix-card {
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+}
+.netflix-card:hover {
+  transform: scale(1.05) translateY(-4px);
+  z-index: 20;
+  box-shadow: 0 16px 30px -10px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+/* 品牌渐变字（Netflix 烈焰红高光） */
 .brand-gradient {
-  background: linear-gradient(to right, #00ccff, #ff3c78);
+  background: linear-gradient(135deg, #e50914 0%, #ff3c50 60%, #ff758c 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
