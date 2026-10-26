@@ -2,14 +2,22 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import { ThemeToggle } from './theme';
-import { SourceManagerDrawer } from './source-manager';
-import { HistoryPanel } from './history-panel';
 import { requestShowDownloadManager } from './download-manager';
 import { Icon } from './icon';
 import { SearchHistoryDropdown, useSearchHistory } from './search-history';
 import { cn } from '@/lib/utils';
+
+const SourceManagerDrawer = dynamic(
+  () => import('./source-manager').then((m) => m.SourceManagerDrawer),
+  { ssr: false }
+);
+const HistoryPanel = dynamic(
+  () => import('./history-panel').then((m) => m.HistoryPanel),
+  { ssr: false }
+);
 
 /** Netflix 沉浸式流媒体顶栏：透明渐变跟随滚动、品牌红标、展开式搜索框 */
 export function Header({

@@ -11,6 +11,7 @@ interface SmartImageProps {
   alt: string;
   className?: string;
   loading?: 'lazy' | 'eager';
+  priority?: boolean;
   /** 候选链耗尽后回调，调用方切换占位图等兜底 UI */
   onExhausted?: () => void;
 }
@@ -28,6 +29,7 @@ export function SmartImage({
   alt,
   className,
   loading = 'lazy',
+  priority = false,
   onExhausted,
 }: SmartImageProps) {
   const candidates = buildImageCandidates(url, mode, customProxy);
@@ -48,7 +50,10 @@ export function SmartImage({
       src={src}
       alt={alt}
       className={className}
-      loading={loading}
+      loading={priority ? 'eager' : loading}
+      // @ts-expect-error fetchpriority is a valid HTML attribute in modern browsers
+      fetchpriority={priority ? 'high' : 'auto'}
+      decoding="async"
       referrerPolicy="no-referrer"
       onError={() => setIdx((i) => i + 1)}
     />

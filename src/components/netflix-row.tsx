@@ -137,6 +137,7 @@ export function NetflixRow({
                   customProxy={customImageProxy}
                   alt={item.title}
                   className="w-full h-full object-cover"
+                  loading={index < 4 ? 'eager' : 'lazy'}
                 />
 
                 {/* 评分角标 */}

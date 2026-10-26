@@ -62,7 +62,7 @@ export function NetflixHero({
           customProxy={customImageProxy}
           alt={current.title}
           className="w-full h-full object-cover object-[center_25%] filter brightness-[0.78] transition-all duration-1000 ease-out"
-          loading="eager"
+          priority
         />
 
         {/* 电影级多重阴影渐变体系 */}

@@ -7,6 +7,13 @@ import { useAppStore } from '@/lib/store';
 import { NetflixRow } from './netflix-row';
 import { DoubanCard } from './video-card';
 import { cn } from '@/lib/utils';
+import {
+  INITIAL_HOT_MOVIES,
+  INITIAL_ANIME,
+  INITIAL_CHINESE_DRAMA,
+  INITIAL_TOP_RATED,
+  INITIAL_WEST_TV,
+} from '@/lib/initial-douban';
 
 interface RecommendSectionProps {
   onPick: (title: string) => void;
@@ -46,26 +53,46 @@ function AllHomeRows({ onPick }: { onPick: (title: string) => void }) {
   const hotQuery = useQuery({
     queryKey: ['douban', 'movie', '热门'],
     queryFn: ({ signal }) => api.douban('movie', '热门', 0, 20, signal),
+    initialData: { items: INITIAL_HOT_MOVIES },
+    staleTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   const animeQuery = useQuery({
     queryKey: ['douban', 'tv', '日本动画'],
     queryFn: ({ signal }) => api.douban('tv', '日本动画', 0, 20, signal),
+    initialData: { items: INITIAL_ANIME },
+    staleTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   const dramaQuery = useQuery({
     queryKey: ['douban', 'tv', '国产剧'],
     queryFn: ({ signal }) => api.douban('tv', '国产剧', 0, 20, signal),
+    initialData: { items: INITIAL_CHINESE_DRAMA },
+    staleTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   const topRatedQuery = useQuery({
     queryKey: ['douban', 'movie', '豆瓣高分'],
     queryFn: ({ signal }) => api.douban('movie', '豆瓣高分', 0, 20, signal),
+    initialData: { items: INITIAL_TOP_RATED },
+    staleTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   const westQuery = useQuery({
     queryKey: ['douban', 'tv', '美剧'],
     queryFn: ({ signal }) => api.douban('tv', '美剧', 0, 20, signal),
+    initialData: { items: INITIAL_WEST_TV },
+    staleTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   return (
