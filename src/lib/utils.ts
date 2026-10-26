@@ -66,17 +66,13 @@ export function buildImageCandidates(
 ): string[] {
   const built = buildImageUrl(url, mode, customTemplate);
   if (!built || !url) return [];
-  const mirrors = url.includes('doubanio.com')
-    ? [
-        url.replace(/img\d+\.doubanio\.com/g, 'img.doubanio.cmliussss.net'),
-        url.replace(/img\d+\.doubanio\.com/g, 'img.doubanio.cmliussss.com'),
-      ]
-    : [];
+  // 杜绝第三方污染镜像（如 cmliussss 等会返回猫咪/新闻），走系统自建安全代理
+  const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
   if (mode === 'proxy') {
-    return [...new Set([built, ...mirrors, url])];
+    return [...new Set([built, proxyUrl, url])];
   }
   if (mode !== 'direct') return [built];
-  return [...new Set([built, ...mirrors, `/api/proxy?url=${encodeURIComponent(url)}`])];
+  return [...new Set([built, proxyUrl])];
 }
 
 export function validateSourceUrl(url: string): boolean {
