@@ -1,5 +1,6 @@
 import type { DoubanItem } from './types';
 import { fetchUpstream, getCache, setCache } from './fetch-utils';
+import { CURATED_ANIME_MAP } from './curated-anime';
 
 /**
  * 豆瓣推荐数据获取（服务端直连，带内存缓存与降级链）。
@@ -32,11 +33,21 @@ export async function fetchDoubanRecommend(
   pageStart: number,
   pageSize: number
 ): Promise<DoubanItem[]> {
-  const cacheKey = `douban:${type}:${tag}:${pageStart}:${pageSize}`;
+  // 1) 动漫精选题材（恋爱、热血、国漫、治愈、科幻、剧场版）直出权威片单库（彻底杜绝豆瓣老接口返空问题）
+  if (type === 'tv' && CURATED_ANIME_MAP[tag]) {
+    return CURATED_ANIME_MAP[tag];
+  }
+
+  // 2) 标签规范化映射（兼容豆瓣官方白名单）
+  let cleanTag = tag;
+  if (cleanTag === '全部') cleanTag = '热门';
+  if (type === 'tv' && (cleanTag === '动漫' || cleanTag === '动画')) cleanTag = '日本动画';
+
+  const cacheKey = `douban:${type}:${cleanTag}:${pageStart}:${pageSize}`;
   const cached = getCache<DoubanItem[]>(cacheKey);
   if (cached) return cached;
 
-  const target = `${DOUBAN_API}?type=${type}&tag=${encodeURIComponent(tag)}&sort=recommend&page_limit=${pageSize}&page_start=${pageStart}`;
+  const target = `${DOUBAN_API}?type=${type}&tag=${encodeURIComponent(cleanTag)}&sort=recommend&page_limit=${pageSize}&page_start=${pageStart}`;
 
   let raw: DoubanRawSubject[] | undefined;
 

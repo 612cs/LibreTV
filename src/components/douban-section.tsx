@@ -21,7 +21,7 @@ interface RecommendSectionProps {
 }
 
 const MOVIE_SUB_TAGS = ['全部', '热门', '豆瓣高分', '华语', '欧美', '科幻', '动作', '悬疑', '喜剧', '经典', '冷门佳片'];
-const TV_SUB_TAGS = ['全部', '热门', '国产剧', '美剧', '韩剧', '日剧', '古装', '悬疑', '综艺', '纪录片'];
+const TV_SUB_TAGS = ['全部', '热门', '国产剧', '美剧', '韩剧', '日剧', '港剧', '英剧', '综艺', '纪录片'];
 const ANIME_SUB_TAGS = ['全部', '日本动画', '国产动画', '热血', '恋爱', '科幻', '治愈', '剧场版'];
 
 export function RecommendSection({
@@ -206,12 +206,14 @@ function MovieCategoryView({ onPick }: { onPick: (title: string) => void }) {
           </h2>
           {filterQuery.isLoading ? (
             <GridSkeleton />
-          ) : (
+          ) : (filterQuery.data?.items ?? []).length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 sm:gap-4">
               {(filterQuery.data?.items ?? []).map((item) => (
                 <DoubanCard key={item.id} item={item} onClick={() => onPick(item.title)} />
               ))}
             </div>
+          ) : (
+            <EmptyTagFallback tag={selectedTag} onReset={() => setSelectedTag('全部')} />
           )}
         </div>
       ) : (
@@ -318,12 +320,14 @@ function TvCategoryView({ onPick }: { onPick: (title: string) => void }) {
           </h2>
           {filterQuery.isLoading ? (
             <GridSkeleton />
-          ) : (
+          ) : (filterQuery.data?.items ?? []).length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 sm:gap-4">
               {(filterQuery.data?.items ?? []).map((item) => (
                 <DoubanCard key={item.id} item={item} onClick={() => onPick(item.title)} />
               ))}
             </div>
+          ) : (
+            <EmptyTagFallback tag={selectedTag} onReset={() => setSelectedTag('全部')} />
           )}
         </div>
       ) : (
@@ -420,12 +424,14 @@ function AnimeCategoryView({ onPick }: { onPick: (title: string) => void }) {
           </h2>
           {filterQuery.isLoading ? (
             <GridSkeleton />
-          ) : (
+          ) : (filterQuery.data?.items ?? []).length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 sm:gap-4">
               {(filterQuery.data?.items ?? []).map((item) => (
                 <DoubanCard key={item.id} item={item} onClick={() => onPick(item.title)} />
               ))}
             </div>
+          ) : (
+            <EmptyTagFallback tag={selectedTag} onReset={() => setSelectedTag('全部')} />
           )}
         </div>
       ) : (
@@ -448,6 +454,28 @@ function AnimeCategoryView({ onPick }: { onPick: (title: string) => void }) {
           />
         </div>
       )}
+    </div>
+  );
+}
+
+function EmptyTagFallback({ tag, onReset }: { tag: string; onReset: () => void }) {
+  return (
+    <div className="py-16 text-center space-y-3 bg-neutral-900/40 rounded-2xl border border-white/5 my-4">
+      <div className="text-3xl text-neutral-500">🎬</div>
+      <div className="text-neutral-300 font-medium text-sm">
+        「{tag}」分类暂无更多上架内容
+      </div>
+      <p className="text-neutral-500 text-xs">
+        正在同步各大源最新收录，您也可以尝试在上方直接搜索片名
+      </p>
+      <div className="pt-2">
+        <button
+          onClick={onReset}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-all cursor-pointer"
+        >
+          返回全部热门
+        </button>
+      </div>
     </div>
   );
 }
