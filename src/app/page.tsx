@@ -10,8 +10,8 @@ import { DetailModal } from '@/components/detail-modal';
 import { AggregatedCard, aggregateResults } from '@/components/video-card';
 import { useAppStore, resolveSource, isInDisabledSubscription, isSourceDisabled } from '@/lib/store';
 import { api } from '@/lib/client-api';
-import type { DoubanItem, SearchResultItem, SourceSearchOutcome } from '@/lib/types';
-import { cn, formatDisableTtl, validateSourceUrl } from '@/lib/utils';
+import type { SearchResultItem, SourceSearchOutcome } from '@/lib/types';
+import { formatDisableTtl, validateSourceUrl } from '@/lib/utils';
 import { useToast } from '@/components/toast';
 import { EmptyState } from '@/components/states';
 import { SiteFooter } from '@/components/site-footer';
@@ -31,6 +31,7 @@ function HomeContent() {
   const router = useRouter();
   const { toast } = useToast();
   const urlQuery = searchParams.get('s') || '';
+  const tabParam = (searchParams.get('tab') || 'all') as 'all' | 'movie' | 'tv' | 'anime';
 
   const customAPIs = useAppStore((s) => s.customAPIs);
   const envSources = useAppStore((s) => s.envSources);
@@ -41,8 +42,15 @@ function HomeContent() {
 
   const [detailItem, setDetailItem] = useState<SearchResultItem | null>(null);
   const [streamedOutcomes, setStreamedOutcomes] = useState<SourceSearchOutcome[]>([]);
-  const [heroItems, setHeroItems] = useState<DoubanItem[]>([]);
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'movie' | 'tv' | 'anime'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'movie' | 'tv' | 'anime'>(
+    ['all', 'movie', 'tv', 'anime'].includes(tabParam) ? tabParam : 'all'
+  );
+
+  useEffect(() => {
+    if (['all', 'movie', 'tv', 'anime'].includes(tabParam)) {
+      setCategoryFilter(tabParam);
+    }
+  }, [tabParam]);
 
   const sourceName = (key: string) =>
     customAPIs.find((a) => a.key === key)?.name ??
@@ -127,33 +135,30 @@ function HomeContent() {
     <div className="min-h-screen flex flex-col bg-[#141414] text-white">
       {/* Netflix 悬浮导航栏 */}
       <Header
+        activeCategory={categoryFilter}
         onNavCategory={(cat) => {
           setCategoryFilter(cat);
-          if (urlQuery) router.push('/', { scroll: false });
+          const nextUrl = cat === 'all' ? '/' : `/?tab=${cat}`;
+          router.push(nextUrl, { scroll: false });
         }}
       />
 
       <main className="flex-1 w-full pb-16">
-        {/* 未处于搜索状态时：呈现沉浸式 Netflix 首屏大片与滑动行 */}
+        {/* 未处于搜索状态时：沉浸式呈现 Netflix 首屏 4K 横屏大片与滑动行 */}
         {!urlQuery ? (
           <>
-            {/* 首屏 Hero Billboard（仅在全部大分类时展示） */}
-            {categoryFilter === 'all' && (
-              <NetflixHero
-                items={heroItems}
-                onPlay={(title) => runSearch(title)}
-                onInfo={(title) => runSearch(title)}
-              />
-            )}
+            {/* 首屏 4K 原生超清横屏 Hero 大片（不同分类具备专属 4K 壁纸） */}
+            <NetflixHero
+              category={categoryFilter}
+              onPlay={(title) => runSearch(title)}
+              onInfo={(title) => runSearch(title)}
+            />
 
-            {/* 内容陈列行区 */}
-            <div className={cn(categoryFilter === 'all' ? '-mt-8 relative z-20' : 'pt-20')}>
+            {/* 内容行陈列区 */}
+            <div className="-mt-8 relative z-20">
               <RecommendSection
                 categoryFilter={categoryFilter}
                 onPick={(title) => runSearch(title)}
-                onHeroItemsLoaded={(items) => {
-                  if (heroItems.length === 0) setHeroItems(items);
-                }}
               />
             </div>
           </>
@@ -179,10 +184,13 @@ function HomeContent() {
               </div>
 
               <button
-                onClick={() => router.push('/', { scroll: false })}
+                onClick={() => {
+                  const backUrl = categoryFilter === 'all' ? '/' : `/?tab=${categoryFilter}`;
+                  router.push(backUrl, { scroll: false });
+                }}
                 className="self-start sm:self-auto text-xs text-neutral-400 hover:text-white flex items-center gap-1.5 py-1.5 px-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
               >
-                <span>返回主页</span>
+                <span>返回浏览</span>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>

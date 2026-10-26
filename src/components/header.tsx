@@ -14,9 +14,11 @@ import { cn } from '@/lib/utils';
 /** Netflix 沉浸式流媒体顶栏：透明渐变跟随滚动、品牌红标、展开式搜索框 */
 export function Header({
   showSearch = true,
+  activeCategory = 'all',
   onNavCategory,
 }: {
   showSearch?: boolean;
+  activeCategory?: 'all' | 'movie' | 'tv' | 'anime';
   onNavCategory?: (category: 'all' | 'movie' | 'tv' | 'anime') => void;
 }) {
   const router = useRouter();
@@ -78,55 +80,87 @@ export function Header({
           </Link>
 
           {/* 桌面端导航主分类 */}
-          <nav className="hidden md:flex items-center gap-5 text-sm font-medium">
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
             <button
               onClick={() => {
                 if (pathname !== '/') router.push('/');
                 onNavCategory?.('all');
               }}
               className={cn(
-                'cursor-pointer transition-colors',
-                pathname === '/' ? 'text-white font-bold' : 'text-neutral-400 hover:text-neutral-200'
+                'relative py-1 cursor-pointer transition-colors',
+                pathname === '/' && activeCategory === 'all'
+                  ? 'text-white font-bold'
+                  : 'text-neutral-400 hover:text-white'
               )}
             >
               首页
+              {pathname === '/' && activeCategory === 'all' && (
+                <span className="absolute -bottom-1 inset-x-0 h-0.5 bg-[#e50914] rounded-full shadow-[0_0_8px_#e50914]" />
+              )}
             </button>
             <button
               onClick={() => {
                 if (pathname !== '/') router.push('/');
                 onNavCategory?.('movie');
               }}
-              className="text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer"
+              className={cn(
+                'relative py-1 cursor-pointer transition-colors',
+                pathname === '/' && activeCategory === 'movie'
+                  ? 'text-white font-bold'
+                  : 'text-neutral-400 hover:text-white'
+              )}
             >
               电影
+              {pathname === '/' && activeCategory === 'movie' && (
+                <span className="absolute -bottom-1 inset-x-0 h-0.5 bg-[#e50914] rounded-full shadow-[0_0_8px_#e50914]" />
+              )}
             </button>
             <button
               onClick={() => {
                 if (pathname !== '/') router.push('/');
                 onNavCategory?.('tv');
               }}
-              className="text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer"
+              className={cn(
+                'relative py-1 cursor-pointer transition-colors',
+                pathname === '/' && activeCategory === 'tv'
+                  ? 'text-white font-bold'
+                  : 'text-neutral-400 hover:text-white'
+              )}
             >
               剧集
+              {pathname === '/' && activeCategory === 'tv' && (
+                <span className="absolute -bottom-1 inset-x-0 h-0.5 bg-[#e50914] rounded-full shadow-[0_0_8px_#e50914]" />
+              )}
             </button>
             <button
               onClick={() => {
                 if (pathname !== '/') router.push('/');
                 onNavCategory?.('anime');
               }}
-              className="text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer"
+              className={cn(
+                'relative py-1 cursor-pointer transition-colors',
+                pathname === '/' && activeCategory === 'anime'
+                  ? 'text-white font-bold'
+                  : 'text-neutral-400 hover:text-white'
+              )}
             >
               动漫
+              {pathname === '/' && activeCategory === 'anime' && (
+                <span className="absolute -bottom-1 inset-x-0 h-0.5 bg-[#e50914] rounded-full shadow-[0_0_8px_#e50914]" />
+              )}
             </button>
             <Link
               href="/live"
               className={cn(
-                'flex items-center gap-1.5 transition-colors',
-                pathname === '/live' ? 'text-white font-bold' : 'text-neutral-400 hover:text-neutral-200'
+                'relative py-1 flex items-center gap-1.5 transition-colors',
+                pathname === '/live' ? 'text-white font-bold' : 'text-neutral-400 hover:text-white'
               )}
             >
               <span className="live-dot" />
               <span>电视直播</span>
+              {pathname === '/live' && (
+                <span className="absolute -bottom-1 inset-x-0 h-0.5 bg-[#e50914] rounded-full shadow-[0_0_8px_#e50914]" />
+              )}
             </Link>
           </nav>
 
