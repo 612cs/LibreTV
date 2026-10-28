@@ -392,8 +392,14 @@ export function VideoCard({ item, onClick }: { item: SearchResultItem; onClick: 
   );
 }
 
-/** 豆瓣推荐卡片（无来源徽章，点击直接搜索） */
-export function DoubanCard({ item, onClick }: { item: { title: string; cover: string; rating?: string }; onClick: () => void }) {
+/** 豆瓣/精选分类网格卡片（Netflix 高定风格） */
+export function DoubanCard({
+  item,
+  onClick,
+}: {
+  item: { title: string; cover: string; rating?: string };
+  onClick: () => void;
+}) {
   const imageProxyMode = useAppStore((s) => s.imageProxyMode);
   const customImageProxy = useAppStore((s) => s.customImageProxy);
   const [imgFailed, setImgFailed] = useState(false);
@@ -401,44 +407,66 @@ export function DoubanCard({ item, onClick }: { item: { title: string; cover: st
 
   return (
     <div
-      className="card cursor-pointer hover:scale-[1.03] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+      className="group relative cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e50914] rounded-[4px]"
       role="button"
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          // 阻止空格触发页面滚动（AggregatedCard 已是此写法，此处对齐）
           e.preventDefault();
           onClick();
         }
       }}
     >
-      <div className="relative aspect-[2/3] bg-chip">
+      <div className="relative aspect-[2/3] rounded-[4px] overflow-hidden bg-[#181818] ring-1 ring-white/[0.08] shadow-lg transition-transform duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:z-10">
         {item.cover && !imgFailed ? (
           <SmartImage
             url={item.cover}
             mode={imageProxyMode}
             customProxy={customImageProxy}
             alt={item.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            loading="eager"
             onExhausted={() => setImgFailed(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-chip">
-            <svg className="w-8 h-8 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-full h-full flex flex-col items-center justify-center bg-[#1f1f1f] text-neutral-600 gap-1 p-2 text-center">
+            <svg className="w-6 h-6 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16m10-16v16M3 6a1 1 0 011-1h1a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6zm4 0a1 1 0 011-1h1a1 1 0 011 1v12a1 1 0 01-1 1h-1a1 1 0 01-1-1V6zm8 0a1 1 0 011-1h1a1 1 0 011 1v12a1 1 0 01-1 1h-1a1 1 0 01-1-1V6zm4 0a1 1 0 011-1h1a1 1 0 011 1v12a1 1 0 01-1 1h-1a1 1 0 01-1-1V6z" />
             </svg>
+            <span className="text-[10px] text-neutral-500 line-clamp-1">{item.title}</span>
           </div>
         )}
+
+        {/* 左上角 Netflix 红色 N 徽标 */}
+        <span className="font-display absolute top-1.5 left-1.5 z-10 text-[#e50914] text-base leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] select-none">
+          N
+        </span>
+
+        {/* 右上角豆瓣/IMDb 高分徽标 */}
         {item.rating && (
-          <span className={cn('absolute top-1.5 right-1.5 tag bg-black/70 text-rating font-medium')}>
+          <span className="absolute top-1.5 right-1.5 z-10 text-[10px] font-bold text-amber-300 bg-black/80 backdrop-blur-sm px-1.5 py-0.5 rounded-[3px] border border-amber-400/20 shadow">
             ★ {item.rating}
           </span>
         )}
-      </div>
-      <div className="p-2">
-        <div className="text-xs font-medium text-content truncate" title={item.title}>
-          {item.title}
+
+        {/* 底部暗角渐变 */}
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+
+        {/* 悬停迷你播放图标 */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+          <div className="w-10 h-10 rounded-full bg-[#e50914] text-white flex items-center justify-center shadow-lg shadow-black/60 transform scale-90 group-hover:scale-100 transition-transform">
+            <svg className="w-5 h-5 ml-0.5 fill-current" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* 底部片名标题 */}
+        <div className="absolute inset-x-0 bottom-0 p-2 z-10">
+          <div className="text-xs font-semibold text-white truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" title={item.title}>
+            {item.title}
+          </div>
         </div>
       </div>
     </div>

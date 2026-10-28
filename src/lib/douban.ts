@@ -47,7 +47,10 @@ export async function fetchDoubanRecommend(
   const cached = getCache<DoubanItem[]>(cacheKey);
   if (cached) return cached;
 
-  const target = `${DOUBAN_API}?type=${type}&tag=${encodeURIComponent(cleanTag)}&sort=recommend&page_limit=${pageSize}&page_start=${pageStart}`;
+  // 针对细分题材标签（如悬疑、动作、科幻、喜剧等），豆瓣默认 recommend 仅有当前院线 1~2 部，采用 rank 高分榜可返回数十部封神大作
+  const rankPreferredTags = ['悬疑', '动作', '科幻', '喜剧', '经典', '冷门佳片', '豆瓣高分', '古装'];
+  const sortMode = rankPreferredTags.includes(cleanTag) ? 'rank' : 'recommend';
+  const target = `${DOUBAN_API}?type=${type}&tag=${encodeURIComponent(cleanTag)}&sort=${sortMode}&page_limit=${pageSize}&page_start=${pageStart}`;
 
   let raw: DoubanRawSubject[] | undefined;
 
