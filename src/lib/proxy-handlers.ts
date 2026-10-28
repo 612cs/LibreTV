@@ -43,7 +43,10 @@ function isAnonymousImageHost(host: string): boolean {
   const h = host.toLowerCase();
   return (
     isDoubanHost(h) ||
+    h === 'image.tmdb.org' || h.endsWith('.tmdb.org') ||
+    h === 'themoviedb.org' || h.endsWith('.themoviedb.org') ||
     h === 'doubanio.viki.moe' || h.endsWith('.doubanio.viki.moe') ||
+    h === 'wsrv.nl' || h.endsWith('.wsrv.nl') ||
     h === 'bgm.tv' || h.endsWith('.bgm.tv')
   );
 }

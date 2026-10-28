@@ -72,6 +72,12 @@ export function buildImageCandidates(
     return [...new Set([built, proxyUrl, url])];
   }
   if (mode !== 'direct') return [built];
+
+  // 豆瓣防盗链限制极其严格，直连必返 418，优先走本站安全代理保证首屏 100% 展现
+  if (url.includes('doubanio.com') || url.includes('douban.com')) {
+    return [proxyUrl, built];
+  }
+
   return [...new Set([built, proxyUrl])];
 }
 
