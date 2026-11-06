@@ -23,6 +23,11 @@
  *   把 source 直连 destination，保留音频通路。
  * - 全 App 复用一个 AudioContext（不是每次换台新建一个），避免上下文数量上限/泄漏。
  * - 手势监听只在「有待补挂项」时存在，补挂完成即解绑，不常驻 document。
+ * - 运行中 ctx 也可能被系统挂起（切后台、来电、interrupted）。一旦挂起，已改道进图的
+ *   元素输出全部无声，且旧手势监听早已解绑、setBoost 只重接线不 resume——不处理就是
+ *   永久静音。因此只要还有存活句柄就监听 ctx 的 statechange：挂起时先试无手势自动
+ *   resume（部分平台中断结束后允许），被自动播放策略拒绝则保持手势监听，由下一次
+ *   用户交互恢复。句柄全部 dispose 后，statechange 与手势监听都撤销，不常驻。
  * - 透明软限幅：threshold=0dB、knee=0、ratio=20，只压超过 0dBFS 的峰值。实测（见下方
  *   createDynamicsCompressor 处的数据）：未顶满的片源全额拿到 +5.11 dB（=1.8 倍），
  *   已经贴近 0dBFS 且滑块拉满的片源被压回约 +1.25 dB，稳态峰值仍略超满量程（1.041）——
@@ -133,7 +138,9 @@ class Handle implements VolumeBoostHandle {
     if (this.disposed) return;
     this.disposed = true;
     pending.delete(this);
+    liveHandles.delete(this);
     releaseGesturesIfIdle();
+    syncCtxStateWatch();
     if (attached.get(this.video) === this) attached.delete(this.video);
     const nodes = this.nodes;
     this.nodes = null;
@@ -150,6 +157,12 @@ class Handle implements VolumeBoostHandle {
 let sharedCtx: AudioContext | null = null;
 const attached = new WeakMap<HTMLVideoElement, Handle>();
 const pending = new Set<Handle>();
+/**
+ * 全部存活句柄（含已建链与 suspended 待补挂）。只要还有一个句柄活着，元素输出就
+ * 只走这张 ctx——ctx 挂起即全部无声——因此必须保有恢复路径；全部 dispose 后才允许
+ * 撤销 statechange / 手势监听。
+ */
+const liveHandles = new Set<Handle>();
 
 /** 手势监听只在 pending 非空期间存在，避免常驻 document */
 const GESTURE_EVENTS = ['pointerdown', 'keydown', 'touchstart'] as const;
@@ -167,9 +180,40 @@ function unbindGestures() {
   gestureHandler = null;
 }
 
-/** pending 清空后解绑，防止监听器永久挂在 document 上 */
+/** pending 清空后解绑，防止监听器永久挂在 document 上。
+ *  例外：ctx 处于挂起且仍有存活句柄——此时元素输出只走这张图，手势是自动恢复
+ *  被拒后唯一的救回途径，必须保留到 resume 成功或句柄全部 dispose。 */
 function releaseGesturesIfIdle() {
-  if (pending.size === 0) unbindGestures();
+  if (pending.size === 0 && !(sharedCtx?.state === 'suspended' && liveHandles.size > 0)) {
+    unbindGestures();
+  }
+}
+
+/**
+ * ctx 状态监听：运行中也可能被系统挂起（切后台、来电、interrupted），挂起即无声。
+ * 只在「有存活句柄」期间监听，全部 dispose 后解绑；ctx 被关闭换新时自动迁移。
+ */
+let ctxStateHandler: (() => void) | null = null;
+let ctxWatched: AudioContext | null = null;
+
+function syncCtxStateWatch() {
+  const ctx = sharedCtx;
+  if (ctxStateHandler && (ctxWatched !== ctx || liveHandles.size === 0)) {
+    ctxWatched?.removeEventListener('statechange', ctxStateHandler);
+    ctxStateHandler = null;
+    ctxWatched = null;
+  }
+  if (!ctx || liveHandles.size === 0 || ctxStateHandler) return;
+  ctxStateHandler = () => {
+    const current = sharedCtx;
+    if (!current || current.state !== 'suspended' || liveHandles.size === 0) return;
+    // 挂起即无声。先试无手势 resume——部分平台中断结束后允许直接恢复；
+    // 被自动播放策略拒绝也没关系，手势监听兜底：下一次交互就是恢复机会。
+    resumeShared();
+    bindGestures();
+  };
+  ctxWatched = ctx;
+  ctx.addEventListener('statechange', ctxStateHandler);
 }
 
 function getAudioContext(): AudioContext | null {
@@ -266,6 +310,8 @@ export function attachVolumeBoost(
 
   const handle = new Handle(video, gain);
   attached.set(video, handle);
+  liveHandles.add(handle);
+  syncCtxStateWatch();
 
   if (ctx.state !== 'running') {
     // 不改道，避免 suspended 状态下无声；等用户交互后 flushPending 补挂

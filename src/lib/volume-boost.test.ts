@@ -21,6 +21,16 @@ interface Harness {
   stats: { mediaSourceCalls: number; ctxCreations: number; added: string[]; removed: string[] };
   /** 关键参数读数：gain.value 与限幅器的 threshold/knee/ratio */
   nodes: () => { gain?: number; threshold?: number; knee?: number; ratio?: number };
+  /** 当前 ctx 状态（running / suspended） */
+  ctxState: () => string;
+  /** 模拟系统挂起（切后台 / 来电 / interrupted）：置 suspended 并广播 statechange */
+  suspendCtx: () => void;
+  /** ctx 上 statechange 监听数（修复后应 ≤1，句柄全部 dispose 后为 0） */
+  ctxListenerCount: () => number;
+  /** document 上当前存活的手势监听总数 */
+  gestureListenerCount: () => number;
+  /** 模拟一次用户交互（默认 pointerdown） */
+  fireGesture: (name?: string) => void;
 }
 
 type FakeNode = {
@@ -35,7 +45,10 @@ type FakeNode = {
   release?: { value: number };
 };
 
-function installFakeAudio(initialState: 'running' | 'suspended' = 'running'): Harness {
+function installFakeAudio(
+  initialState: 'running' | 'suspended' = 'running',
+  opts: { resumeNeedsGesture?: boolean } = {}
+): Harness {
   const links = new Set<string>();
   const stats = { mediaSourceCalls: 0, ctxCreations: 0, added: [] as string[], removed: [] as string[] };
   let seq = 0;
@@ -57,13 +70,25 @@ function installFakeAudio(initialState: 'running' | 'suspended' = 'running'): Ha
   const destination = mk('destination');
   const seenElements = new WeakSet<object>();
 
+  const instances: FakeAudioContext[] = [];
+
   class FakeAudioContext {
     state: string = initialState;
     destination = destination;
+    statechangeListeners = new Set<() => void>();
     constructor() {
       stats.ctxCreations += 1;
+      instances.push(this);
     }
-    resume = async () => { this.state = 'running'; };
+    addEventListener = (_type: string, fn: () => void) => { this.statechangeListeners.add(fn); };
+    removeEventListener = (_type: string, fn: () => void) => { this.statechangeListeners.delete(fn); };
+    private fire() { for (const fn of Array.from(this.statechangeListeners)) fn(); }
+    resume = async () => {
+      // 自动播放策略：没有用户手势时 resume 被拒（NotAllowedError）
+      if (opts.resumeNeedsGesture && !gestureSeen) throw new Error('NotAllowedError');
+      if (this.state !== 'running') { this.state = 'running'; this.fire(); }
+    };
+    suspend = () => { if (this.state !== 'suspended') { this.state = 'suspended'; this.fire(); } };
     createMediaElementSource = (el: object) => {
       stats.mediaSourceCalls += 1;
       // 真实规范：同一元素只能调用一次，重复调用抛 InvalidStateError
@@ -79,13 +104,23 @@ function installFakeAudio(initialState: 'running' | 'suspended' = 'running'): Ha
       });
   }
 
+  // document 存真实监听器（可触发/可计数），added/removed 继续记录日志
+  const docListeners = new Map<string, Set<() => void>>();
+  let gestureSeen = false;
+  vi.stubGlobal('document', {
+    addEventListener: (name: string, fn: () => void) => {
+      stats.added.push(name);
+      if (!docListeners.has(name)) docListeners.set(name, new Set());
+      docListeners.get(name)!.add(fn);
+    },
+    removeEventListener: (name: string, fn: () => void) => {
+      stats.removed.push(name);
+      docListeners.get(name)?.delete(fn);
+    },
+  });
   vi.stubGlobal('window', {
     location: { href: 'http://localhost:8080/watch', origin: 'http://localhost:8080' },
     AudioContext: FakeAudioContext,
-  });
-  vi.stubGlobal('document', {
-    addEventListener: (name: string) => { stats.added.push(name); },
-    removeEventListener: (name: string) => { stats.removed.push(name); },
   });
 
   return {
@@ -98,6 +133,16 @@ function installFakeAudio(initialState: 'running' | 'suspended' = 'running'): Ha
       knee: created.compressor?.knee?.value,
       ratio: created.compressor?.ratio?.value,
     }),
+    ctxState: () => instances.at(-1)?.state ?? 'none',
+    suspendCtx: () => instances.at(-1)?.suspend(),
+    ctxListenerCount: () => instances.at(-1)?.statechangeListeners.size ?? 0,
+    gestureListenerCount: () =>
+      Array.from(docListeners.values()).reduce((n, s) => n + s.size, 0),
+    fireGesture: (name = 'pointerdown') => {
+      gestureSeen = true;
+      const fns = docListeners.get(name);
+      if (fns) for (const fn of Array.from(fns)) fn();
+    },
   };
 }
 
@@ -247,5 +292,88 @@ describe('suspended 补挂与手势监听生命周期', () => {
     expect(h.rawEdges()).toEqual([]);
     expect(h.stats.mediaSourceCalls).toBe(0);
     expect(h.stats.removed.sort()).toEqual(['keydown', 'pointerdown', 'touchstart']);
+  });
+});
+
+/** 排空微任务链（resume().then → flushPending → …） */
+const tick = async () => {
+  for (let i = 0; i < 4; i++) await Promise.resolve();
+};
+
+describe('运行中挂起后的恢复（切后台 / 来电 / interrupted）', () => {
+  it('ctx 从 running 被系统挂起后自动尝试 resume，不重建媒体源、不留手势监听', async () => {
+    const h = installFakeAudio('running');
+    const mod = await freshModule();
+    mod.attachVolumeBoost(video('blob:http://localhost:8080/x'));
+    expect(h.ctxState()).toBe('running');
+
+    h.suspendCtx(); // 系统挂起：输出已改道进图 → 此刻起无声
+    await tick(); // 给可能存在的自动恢复路径机会
+
+    expect(h.ctxState()).toBe('running'); // main 上红：没有任何路径调 resume
+    // 恢复是把同一张图跑起来，不是拆链重建
+    expect(h.stats.mediaSourceCalls).toBe(1);
+    expect(h.edges().sort()).toEqual([...BOOSTED].sort());
+    expect(h.gestureListenerCount()).toBe(0);
+  });
+
+  it('自动 resume 被自动播放策略拒绝时，下一次用户交互必须能救回（不许永久静音）', async () => {
+    const h = installFakeAudio('running', { resumeNeedsGesture: true });
+    const mod = await freshModule();
+    const handle = mod.attachVolumeBoost(video('blob:http://localhost:8080/x'));
+    expect(handle).not.toBeNull();
+
+    h.suspendCtx();
+    await tick();
+
+    expect(h.ctxState()).toBe('suspended'); // 自动恢复被拒，符合预期
+    expect(h.gestureListenerCount()).toBe(3); // 但手势兜底必须在（main 上红：0）
+
+    h.fireGesture('pointerdown');
+    await tick();
+
+    expect(h.ctxState()).toBe('running'); // main 上也红：手势监听在建链后就解绑了
+    expect(h.stats.mediaSourceCalls).toBe(1);
+    expect(h.edges().sort()).toEqual([...BOOSTED].sort());
+    expect(h.gestureListenerCount()).toBe(0);
+  });
+
+  it('挂起后开关「音量放大」本身就是一次交互，必须顺带救回（此前关掉再开也救不回）', async () => {
+    const h = installFakeAudio('running', { resumeNeedsGesture: true });
+    const mod = await freshModule();
+    const handle = mod.attachVolumeBoost(video('blob:http://localhost:8080/x'))!;
+
+    h.suspendCtx();
+    await tick();
+
+    h.fireGesture('pointerdown'); // 用户点了设置里的开关（capture 手势监听先于开关生效）
+    handle.setBoost(false); // 随后开关状态翻转
+    await tick();
+
+    expect(h.ctxState()).toBe('running'); // main 上红：setBoost 只重接线，不 resume
+    expect(h.edges()).toEqual(['mediaSource->destination']); // 单位增益直通
+  });
+
+  it('ctx 状态监听只在存活句柄期间存在，全部 dispose 后解绑', async () => {
+    const h = installFakeAudio('running');
+    const mod = await freshModule();
+    const handle = mod.attachVolumeBoost(video('blob:http://localhost:8080/x'));
+    expect(h.ctxListenerCount()).toBe(1); // main 上红：从不监听 statechange
+    handle!.dispose();
+    expect(h.ctxListenerCount()).toBe(0);
+    expect(h.gestureListenerCount()).toBe(0);
+  });
+
+  it('挂起且无法自动恢复期间全部 dispose：手势与 statechange 监听全部撤销', async () => {
+    const h = installFakeAudio('running', { resumeNeedsGesture: true });
+    const mod = await freshModule();
+    const handle = mod.attachVolumeBoost(video('blob:http://localhost:8080/x'))!;
+    h.suspendCtx();
+    await tick();
+    expect(h.gestureListenerCount()).toBe(3); // 挂起未恢复：手势兜底保持
+    handle.dispose();
+    expect(h.gestureListenerCount()).toBe(0);
+    expect(h.ctxListenerCount()).toBe(0);
+    expect(h.stats.mediaSourceCalls).toBe(1); // dispose 不多建媒体源
   });
 });
