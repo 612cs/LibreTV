@@ -3,6 +3,9 @@ node_modules/
 out/
 .env
 .env*.local
+# 测试环境变量含真实凭据，严禁入库（曾误提交，见 fix/remove-env-test）
+.env.test
+.env.*.test
 *.tsbuildinfo
 vitest-results.json
 *.log
